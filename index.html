@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Dissection VR A-Frame MVP</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- A-Frame 1.x CDN -->
+    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+    <script src="js/main.js" defer></script>
+  </head>
+  <body>
+    <h2>VR Dissection MVP (A-Frame)</h2>
+    <div id="info"></div>
+    <a-scene>
+      <!-- Camera/Rig -->
+      <a-entity camera position="0 1.6 3"></a-entity>
+      <a-entity light="type: ambient; intensity: 1"></a-entity>
+      <a-entity light="type: directional; intensity: 0.5" position="1 2 1"></a-entity>
+      <!-- Model will be added dynamically -->
+      <a-entity id="specimen-holder" position="0 0.5 -1"></a-entity>
+      <!-- Text for step instructions -->
+      <a-entity id="step-instructions"
+                text="value: Loading step...; color: white; width: 2"
+                position="-1 2.2 -2"></a-entity>
+    </a-scene>
+  </body>
+</html>
