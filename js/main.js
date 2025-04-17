@@ -40,10 +40,12 @@ async function showStep(stepIndex) {
 		entity.classList.add("clickable");
 		entity.addEventListener('click', () => {
 			if (comboIsValid(step.valid_tool_combinations)) {
-				// Success: Hide skin, show next model, move to next step if present
 				feedback.textContent = 'Success! You performed the right action!';
-				entity.setAttribute('visible', 'false');
-				// You can also call showStep(currentStepIndex+1) if ready for next step
+				const skin = holder.querySelector('#model-skin');
+				const muscle = holder.querySelector('#model-muscle');
+				if (skin) skin.setAttribute('visible', 'false');
+				if (muscle) muscle.setAttribute('visible', 'true');
+				// Optionally call showStep(currentStepIndex + 1);
 			} else {
 				feedback.textContent = 'Try using the right tools (select in tray)';
 			}
