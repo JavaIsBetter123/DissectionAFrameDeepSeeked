@@ -1,59 +1,52 @@
-// main.js: Entry point for A-Frame VR Dissection MVP
-import { loadSteps, displayStep } from "./stepLoader.js";
-import { renderToolTray, resetToolSelection, selectedTools } from './toolSystem.js';
-import { handlePartInteraction } from './stepController.js';
+import { loadSteps, displayStep } from './stepLoader.js';
+import { renderToolTray, resetToolSelection } from './toolSystem.js';
+import { attachPartClickHandler } from './stepController.js';
 
 let steps = [];
 let currentStepIndex = 0;
+let allTools = {};
+
+// Load tools.json once
+fetch("data/tools.json")
+	.then(res => res.json())
+	.then(obj => { allTools = obj; });
 
 document.addEventListener("DOMContentLoaded", async () => {
 	steps = await loadSteps("data/sample_steps.json");
 	showStep(0);
 });
 
-function showStep(stepIdx) {
-	currentStepIndex = stepIdx;
-	const step = steps[stepIdx];
+async function showStep(stepIndex) {
+	currentStepIndex = stepIndex;
+	const step = steps[currentStepIndex];
+
 	displayStep(step);
 
-	fetch("data/tools.json")
-		.then(res => res.json())
-		.then((allTools) => {
-			renderToolTray(step.required_tools, allTools, (tools) => {
-				// Could update UI to say "Now click a part!"
-			});
-		});
+	const feedback = document.getElementById('feedback');
+	feedback.textContent = '';
 
-	const holder = document.getElementById("specimen-holder");
-	// Attach click event to each model part
-	[...holder.children].forEach(entity => {
-		entity.onclick = () => {
-			handlePartInteraction(
-				entity.id?.replace("model-", ""),
-				step,
-				(part, step) => {
-					document.getElementById('feedback').textContent = 'Great! Skin removed!';
-					entity.setAttribute('visible', 'false');
-					// Reveal next model, according to on_success/actions, etc.
-				},
-				() => {
-					document.getElementById('feedback').textContent = 'Try using the right tool combination!';
-				}
-			);
-		};
-	});
+	renderToolTray(
+		step.required_tools,
+		allTools,
+		() => { feedback.textContent = ''; } // clear feedback on tool selection
+	);
+
 	resetToolSelection();
-}
 
-document.addEventListener("DOMContentLoaded", async () => {
-  const info = document.getElementById("info");
-  info.textContent = "Loading steps...";
-  try {
-    const steps = await loadSteps("data/sample_steps.json");
-    info.textContent = `Step loaded: ${steps[0].title}`;
-    displayStep(steps[0]);
-  } catch (e) {
-    info.textContent = "Failed to load steps: " + e.message;
-    console.error(e);
-  }
-});
+	// Attach click handlers for each relevant model part
+	const holder = document.getElementById("specimen-holder");
+	[...holder.children].forEach(entity => {
+		const partName = entity.id?.replace('model-', '');
+		entity.classList.add("clickable");
+		entity.addEventListener('click', () => {
+			if (comboIsValid(step.valid_tool_combinations)) {
+				// Success: Hide skin, show next model, move to next step if present
+				feedback.textContent = 'Success! You performed the right action!';
+				entity.setAttribute('visible', 'false');
+				// You can also call showStep(currentStepIndex+1) if ready for next step
+			} else {
+				feedback.textContent = 'Try using the right tools (select in tray)';
+			}
+		});
+	});
+}
