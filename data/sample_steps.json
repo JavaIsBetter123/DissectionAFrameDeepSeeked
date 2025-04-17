@@ -2,7 +2,7 @@
   {
     "id": "peel-skin",
     "title": "Peel Off the Skin",
-    "description": "Use the forceps and scissors to carefully remove the skin and reveal the muscle beneath.",
+    "description": "Use forceps and scissors to carefully remove the skin.",
     "specimens": ["chicken"],
     "required_tools": ["large_dissecting_scissors", "teethed_forceps"],
     "valid_tool_combinations": [
@@ -22,7 +22,24 @@
       }
     },
     "final_state": {
-      "skin": { "visible": false },
+      "skin": { "visible": true },
+      "muscle": { "visible": false }
+    }
+  },
+  {
+    "id": "inspect-muscle",
+    "title": "Inspect the Muscle",
+    "description": "Muscle is now exposed. Observe its texture and color.",
+    "specimens": ["chicken"],
+    "required_tools": [],
+    "valid_tool_combinations": [],
+    "on_success": { "actions": [] },
+    "models": {
+      "muscle": {
+        "path": "assets/chicken_muscle.glb"
+      }
+    },
+    "final_state": {
       "muscle": { "visible": true }
     }
   }

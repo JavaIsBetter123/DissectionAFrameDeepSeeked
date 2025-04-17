@@ -1,0 +1,19 @@
+<style>
+	#tool-tray button {
+		margin: 0 .5em .5em 0;
+		padding: .6em 1.1em;
+		cursor: pointer;
+		border-radius: 7px;
+		border: 1px solid #aaa;
+		font-size: 1.1em;
+	}
+	#tool-tray button:active {
+		border-color: #76daff;
+		outline: 2px solid #35f;
+	}
+	#feedback {
+		font-weight: bold;
+		color: green;
+		margin-bottom: .8em;
+	}
+</style>
