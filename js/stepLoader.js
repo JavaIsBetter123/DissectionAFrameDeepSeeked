@@ -46,7 +46,7 @@ export function displayStep(step) {
 		const entity = document.createElement("a-entity");
 		entity.setAttribute("id", `model-${part}`);
 		console.log(`  Setting gltf-model path: ${modelDef.path}`);
-		entity.setAttribute("gltf-model", `url(${modelDef.path})`); // Wrap path in url()
+		entity.setAttribute("gltf-model", `${modelDef.path}`); // Wrap path in url()
 		entity.setAttribute("position", "0 0 0"); // Position relative to holder
 
 		entity.addEventListener("model-error", (e) => {
