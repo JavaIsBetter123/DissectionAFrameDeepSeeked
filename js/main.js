@@ -1,120 +1,119 @@
-// main.js
+// main.js (updated with better model handling)
 import { loadSteps, displayStep } from './stepLoader.js';
 import { renderToolTray, resetToolSelection } from './toolSystem.js';
-// Import comboIsValid if you plan to use the click handler logic here later
-// import { comboIsValid } from './stepController.js';
 
 let steps = [];
 let currentStepIndex = 0;
 let allTools = {};
+let modelsLoaded = false; // Track model loading state
 
 // Load tools.json once
 fetch("data/tools.json")
-	.then(res => {
-		console.log("Fetched tools.json response:", res);
-		if (!res.ok) throw new Error(`Failed to fetch tools: ${res.statusText}`);
-		return res.json();
-	})
-	.then(obj => {
-		console.log("Parsed tools:", obj);
-		allTools = obj;
-	})
-	.catch(error => console.error("Error loading tools.json:", error)); // Added catch
+  .then(res => {
+    if (!res.ok) throw new Error(`Failed to fetch tools: ${res.statusText}`);
+    return res.json();
+  })
+  .then(obj => {
+    allTools = obj;
+  })
+  .catch(error => console.error("Error loading tools.json:", error));
 
 document.addEventListener("DOMContentLoaded", async () => {
-	console.log("DOM Content Loaded. Starting app initialization.");
-	try {
-		steps = await loadSteps("data/sample_steps.json");
-		console.log("Steps loaded successfully:", steps);
-		if (steps && steps.length > 0) {
-			console.log("Attempting to show step 0.");
-			showStep(0); // Call showStep only if steps loaded
-		} else {
-			console.error("No steps loaded or steps array is empty.");
-		}
-	} catch (error) {
-		console.error("Error in DOMContentLoaded initialization:", error);
-	}
+  try {
+    steps = await loadSteps("data/sample_steps.json");
+    if (steps && steps.length > 0) {
+      showStep(0);
+    } else {
+      console.error("No steps loaded or steps array is empty.");
+    }
+  } catch (error) {
+    console.error("Error in DOMContentLoaded initialization:", error);
+  }
 });
 
 async function showStep(stepIndex) {
-	console.log(`showStep called for index: ${stepIndex}`);
-	currentStepIndex = stepIndex;
-	const step = steps[currentStepIndex];
-	console.log("Current step data:", step);
+  currentStepIndex = stepIndex;
+  const step = steps[currentStepIndex];
+  
+  if (!step) {
+    console.error(`Step data for index ${stepIndex} is undefined.`);
+    return;
+  }
 
-	if (!step) {
-		console.error(`Step data for index ${stepIndex} is undefined.`);
-		return; // Stop if step data is missing
-	}
+  const scene = document.querySelector('a-scene');
+  if (!scene.hasLoaded) {
+    await new Promise(resolve => scene.addEventListener('loaded', resolve, { once: true }));
+  }
 
-	// Ensure A-Frame scene is ready (optional but good practice)
-	const scene = document.querySelector('a-scene');
-	if (!scene.hasLoaded) {
-		console.log("A-Frame scene not loaded yet, waiting...");
-		await new Promise(resolve => scene.addEventListener('loaded', resolve, { once: true }));
-		console.log("A-Frame scene loaded.");
-	}
+  modelsLoaded = false;
+  displayStep(step);
+  
+  const feedback = document.getElementById('feedback');
+  if (feedback) feedback.textContent = '';
 
-	displayStep(step); // This function adds the models
+  renderToolTray(
+    step.required_tools || [],
+    allTools,
+    () => { if (feedback) feedback.textContent = ''; }
+  );
 
-	const feedback = document.getElementById('feedback');
-	if (feedback) feedback.textContent = ''; // Check if feedback exists
+  resetToolSelection();
 
-	// Ensure allTools is loaded before rendering tray
-	if (Object.keys(allTools).length === 0) {
-		console.warn("Tools not loaded yet when trying to render tool tray.");
-		// Optionally wait or fetch again, but better to ensure fetch completes first
-	}
-
-	renderToolTray(
-		step.required_tools || [], // Handle potentially missing required_tools
-		allTools,
-		() => { if (feedback) feedback.textContent = ''; } // clear feedback on tool selection
-	);
-
-	resetToolSelection();
-
-	// Attach click handlers for each relevant model part
-	// NOTE: This logic might run *before* the models are fully loaded by A-Frame.
-	// It's generally better to attach handlers after a 'model-loaded' event
-	// or use event delegation on the holder.
-	const holder = document.getElementById("specimen-holder");
-	if (holder) {
-		console.log("Attaching click handlers to children of:", holder);
-		// Wait a brief moment for entities to potentially be added by displayStep
-		setTimeout(() => {
-			[...holder.children].forEach(entity => {
-				const partName = entity.id?.replace('model-', '');
-				console.log(`Adding click listener to entity: ${entity.id}`);
-				entity.classList.add("clickable"); // Make sure CSS targets .clickable if needed
-
-				// Remove previous listener if any to prevent duplicates
-				// This requires storing the listener function, complicates things a bit.
-				// For now, let's assume it's okay.
-
-				entity.addEventListener('click', () => {
-					console.log(`Clicked on ${entity.id}`);
-					// Temporarily disable comboIsValid check to see if click works
-					// if (comboIsValid(step.valid_tool_combinations)) {
-					if (true) { // Test click registration
-						if (feedback) feedback.textContent = 'Success! You performed the right action!';
-						const skin = holder.querySelector('#model-skin');
-						const muscle = holder.querySelector('#model-muscle');
-						console.log("Attempting to toggle visibility. Skin:", skin, "Muscle:", muscle);
-						if (skin) skin.setAttribute('visible', 'false');
-						if (muscle) muscle.setAttribute('visible', 'true');
-						// Optionally call showStep(currentStepIndex + 1);
-					} else {
-						if (feedback) feedback.textContent = 'Try using the right tools (select in tray)';
-					}
-				});
-			});
-		}, 100); // Small delay - better methods exist (like waiting for model-loaded)
-	} else {
-		console.error("Specimen holder not found!");
-	}
+  // Wait for all models to load before enabling interaction
+  await waitForModels();
+  modelsLoaded = true;
+  setupInteractions(step);
 }
 
-// NOTE: The original main.js didn't explicitly call showStep if the fetch calls failed
-// or if loadSteps returned an empty array. Added checks for that.
+async function waitForModels() {
+  const holder = document.getElementById("specimen-holder");
+  if (!holder) return;
+  
+  const models = [...holder.querySelectorAll('[gltf-model]')];
+  if (models.length === 0) return;
+  
+  await Promise.all(models.map(model => {
+    return new Promise(resolve => {
+      if (model.hasLoaded) {
+        resolve();
+      } else {
+        model.addEventListener('model-loaded', resolve, { once: true });
+      }
+    });
+  }));
+}
+
+function setupInteractions(step) {
+  const holder = document.getElementById("specimen-holder");
+  if (!holder) return;
+
+  // Organize z-index for proper layering
+  const layers = {
+    'skin': 0.1,
+    'muscle': 0.2,
+    'organs': 0.3
+  };
+
+  [...holder.children].forEach(entity => {
+    const partName = entity.id.replace('model-', '');
+    const layer = Object.keys(layers).find(l => partName.includes(l));
+    if (layer) {
+      const pos = entity.getAttribute('position');
+      entity.setAttribute('position', { ...pos, z: layers[layer] });
+    }
+
+    entity.classList.add("clickable");
+    entity.addEventListener('click', () => {
+      if (!modelsLoaded) return;
+      
+      const feedback = document.getElementById('feedback');
+      if (feedback) feedback.textContent = 'Success! You performed the right action!';
+      
+      // Toggle between skin and muscle layers
+      const skin = holder.querySelector('#model-skin');
+      const muscle = holder.querySelector('#model-muscle');
+      if (skin) skin.setAttribute('visible', 'false');
+      if (muscle) muscle.setAttribute('visible', 'true');
+    });
+  });
+}
