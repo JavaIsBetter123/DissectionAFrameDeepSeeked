@@ -1,8 +1,14 @@
 {
-  "large_dissecting_scissors": {
-    "display_name": "Large Dissecting Scissors"
+  "scalpel": {
+    "display_name": "Scalpel",
+    "icon": "icons/scalpel.png"
   },
-  "teethed_forceps": {
-    "display_name": "Teethed Forceps"
+  "forceps": {
+    "display_name": "Forceps",
+    "icon": "icons/forceps.png"
+  },
+  "probe": {
+    "display_name": "Probe",
+    "icon": "icons/probe.png"
   }
 }
