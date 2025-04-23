@@ -1,46 +1,45 @@
-[
-  {
-    "id": "peel-skin",
-    "title": "Peel Off the Skin",
-    "description": "Use forceps and scissors to carefully remove the skin.",
-    "specimens": ["chicken"],
-    "required_tools": ["large_dissecting_scissors", "teethed_forceps"],
-    "valid_tool_combinations": [
-      ["large_dissecting_scissors", "teethed_forceps"]
-    ],
-    "on_success": {
-      "actions": [
-        { "type": "reveal", "part": "muscle" }
-      ]
-    },
-    "models": {
-      "skin": {
-        "path": "assets/chicken_skin.glb"
+{
+  "steps": [
+    {
+      "id": "skin_removal",
+      "description": "Remove the skin to reveal the muscle layer",
+      "required_tools": ["scalpel", "forceps"],
+      "valid_tool_combinations": [["scalpel", "forceps"]],
+      "models": {
+        "skin": {
+          "path": "models/frog_skin.gltf",
+          "position": { "x": 0, "y": 0, "z": 0.1 }
+        },
+        "muscle": {
+          "path": "models/frog_muscle.gltf",
+          "position": { "x": 0, "y": 0, "z": 0.2 },
+          "visible": false
+        }
       },
-      "muscle": {
-        "path": "assets/chicken_muscle.glb"
+      "final_state": {
+        "skin": { "visible": false },
+        "muscle": { "visible": true }
       }
     },
-    "final_state": {
-      "skin": { "visible": true },
-      "muscle": { "visible": false }
-    }
-  },
-  {
-    "id": "inspect-muscle",
-    "title": "Inspect the Muscle",
-    "description": "Muscle is now exposed. Observe its texture and color.",
-    "specimens": ["chicken"],
-    "required_tools": [],
-    "valid_tool_combinations": [],
-    "on_success": { "actions": [] },
-    "models": {
-      "muscle": {
-        "path": "assets/chicken_muscle.glb"
+    {
+      "id": "organ_exposure",
+      "description": "Examine the internal organs",
+      "required_tools": ["scalpel", "probe"],
+      "valid_tool_combinations": [["scalpel", "probe"]],
+      "models": {
+        "heart": {
+          "path": "models/frog_heart.gltf",
+          "position": { "x": 0.1, "y": -0.05, "z": 0.3 }
+        },
+        "liver": {
+          "path": "models/frog_liver.gltf",
+          "position": { "x": -0.1, "y": 0, "z": 0.3 }
+        },
+        "intestines": {
+          "path": "models/frog_intestines.gltf",
+          "position": { "x": 0, "y": 0.1, "z": 0.3 }
+        }
       }
-    },
-    "final_state": {
-      "muscle": { "visible": true }
     }
-  }
-]
+  ]
+}
