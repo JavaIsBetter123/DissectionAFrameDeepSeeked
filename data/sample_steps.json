@@ -2,7 +2,7 @@
   "steps": [
     {
       "id": "skin_removal",
-      "description": "Remove the skin to reveal the muscle layer",
+      "description": "1. Use scalpel and forceps to remove the skin",
       "required_tools": ["scalpel", "forceps"],
       "valid_tool_combinations": [["scalpel", "forceps"]],
       "models": {
@@ -23,7 +23,7 @@
     },
     {
       "id": "organ_exposure",
-      "description": "Examine the internal organs",
+      "description": "2. Examine the internal organs with scalpel and probe",
       "required_tools": ["scalpel", "probe"],
       "valid_tool_combinations": [["scalpel", "probe"]],
       "models": {
@@ -38,6 +38,11 @@
         "intestines": {
           "path": "models/frog_intestines.gltf",
           "position": { "x": 0, "y": 0.1, "z": 0.3 }
+        },
+        "muscle": {
+          "path": "models/frog_muscle.gltf",
+          "position": { "x": 0, "y": 0, "z": 0.2 },
+          "visible": true
         }
       }
     }
