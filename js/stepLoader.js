@@ -1,86 +1,72 @@
-// stepLoader.js
-export async function loadSteps(url) {
-	console.log(`Fetching steps from: ${url}`);
-	const res = await fetch(url);
-	console.log(`Fetch response status for steps: ${res.status}`);
-	if (!res.ok) throw new Error(`Could not fetch steps (${url}): ${res.status} ${res.statusText}`);
-	try {
-		const data = await res.json();
-		console.log("Parsed steps data:", data);
-		if (!Array.isArray(data)) throw new Error("steps.json content must be an array");
-		return data;
-	} catch (error) {
-		throw new Error(`Failed to parse JSON from ${url}: ${error.message}`);
-	}
-}
-
+// stepLoader.js (with better model organization)
 export function displayStep(step) {
-	console.log("--- displayStep called ---");
-	console.log("Step data:", step);
-	const scene = document.querySelector("a-scene");
-	const holder = document.getElementById("specimen-holder");
+  const scene = document.querySelector("a-scene");
+  const holder = document.getElementById("specimen-holder");
 
-	if (!scene) {
-		console.error("A-Frame scene (<a-scene>) not found!");
-		return;
-	}
-	if (!holder) {
-		console.error("Specimen holder entity (#specimen-holder) not found!");
-		return;
-	}
+  if (!scene || !holder) {
+    console.error("Required elements not found!");
+    return;
+  }
 
-	console.log("Clearing specimen holder:", holder);
-	holder.innerHTML = ""; // Clear any previous children
+  holder.innerHTML = "";
 
-	if (!step.models || Object.keys(step.models).length === 0) {
-		console.warn("No models defined for this step:", step.id);
-		// Update instructions even if no models
-		const inst = document.getElementById("step-instructions");
-  	if (inst && step.description) inst.setAttribute("text", "value", step.description);
-		return;
-	}
+  if (!step.models || Object.keys(step.models).length === 0) {
+    console.warn("No models defined for this step:", step.id);
+    const inst = document.getElementById("step-instructions");
+    if (inst && step.description) inst.setAttribute("text", "value", step.description);
+    return;
+  }
 
-	console.log("Processing models:", step.models);
-	for (const [part, modelDef] of Object.entries(step.models)) {
-		console.log(`Creating entity for part: ${part}`);
-		const entity = document.createElement("a-entity");
-		entity.setAttribute("id", `model-${part}`);
-		console.log(`  Setting gltf-model path: ${modelDef.path}`);
-		entity.setAttribute("gltf-model", `${modelDef.path}`); // Wrap path in url()
-		entity.setAttribute("position", "0 0 0"); // Position relative to holder
+  // Organize models by type for proper positioning
+  const modelGroups = {
+    'skin': [],
+    'muscle': [],
+    'organs': []
+  };
 
-		entity.addEventListener("model-error", (e) => {
-			console.error(`!!! Model error for "${part}" (${modelDef.path}):`, e.detail);
-		});
-		entity.addEventListener("model-loaded", (e) => {
-			console.log(`--- Model loaded successfully for "${part}" (${modelDef.path}) ---`);
-			// You might want to attach click handlers *here* instead of in main.js
-		});
+  // First pass: categorize models
+  for (const [part, modelDef] of Object.entries(step.models)) {
+    const group = Object.keys(modelGroups).find(g => part.includes(g)) || 'organs';
+    modelGroups[group].push({ part, modelDef });
+  }
 
-		// Set visibility based on final_state if defined
-		let isVisible = true; // Default to visible
-		if (step.final_state && step.final_state[part] && typeof step.final_state[part].visible === 'boolean') {
-			isVisible = step.final_state[part].visible;
-			console.log(`  Visibility for ${part} from final_state: ${isVisible}`);
-		} else {
-			console.log(`  No specific visibility in final_state for ${part}, defaulting to true.`);
-		}
-		entity.setAttribute("visible", isVisible.toString()); // Set attribute explicitly
+  // Second pass: create entities with organized positioning
+  Object.entries(modelGroups).forEach(([group, models]) => {
+    models.forEach(({ part, modelDef }) => {
+      const entity = document.createElement("a-entity");
+      entity.setAttribute("id", `model-${part}`);
+      entity.setAttribute("gltf-model", modelDef.path);
+      
+      // Set default position based on group
+      const basePosition = {
+        skin: { x: 0, y: 0, z: 0.1 },
+        muscle: { x: 0, y: 0, z: 0.2 },
+        organs: { x: 0, y: 0, z: 0.3 }
+      }[group] || { x: 0, y: 0, z: 0 };
+      
+      entity.setAttribute("position", basePosition);
+      
+      // Apply any step-specific position overrides
+      if (modelDef.position) {
+        entity.setAttribute("position", modelDef.position);
+      }
 
-		console.log(`  Appending entity ${entity.id} to holder. Visible: ${isVisible}`);
-		holder.appendChild(entity);
-	}
+      // Set visibility
+      const isVisible = step.final_state?.[part]?.visible ?? true;
+      entity.setAttribute("visible", isVisible.toString());
 
-	console.log("Current children of specimen-holder:", holder.children);
+      // Add error handling
+      entity.addEventListener("model-error", (e) => {
+        console.error(`Model error for "${part}":`, e.detail);
+      });
 
-	// Update step instructions
-	const inst = document.getElementById("step-instructions");
-	if (inst && step.description) {
-		console.log("Updating step instructions text.");
-		inst.setAttribute("text", "value", step.description);
-	} else {
-		if (!inst) console.warn("Step instructions entity (#step-instructions) not found.");
-		if (!step.description) console.warn("No description found in step data for instructions.");
-	}
-	console.log("--- displayStep finished ---");
+      holder.appendChild(entity);
+    });
+  });
+
+  // Update instructions
+  const inst = document.getElementById("step-instructions");
+  if (inst && step.description) {
+    inst.setAttribute("text", "value", step.description);
+  }
 }
